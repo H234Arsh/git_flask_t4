@@ -1,30 +1,34 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from pymongo import MongoClient
 import os
+from flask import Flask, request, jsonify
+from pymongo import MongoClient
 
 app = Flask(__name__)
-CORS(app)
 
-# MongoDB connection
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://harshavvc234:wP5Ifcv0FwJuj3vG@cluster444.x7wmqzg.mongodb.net/")
+# Get MongoDB URI from environment variable or use your Atlas URI as default
+MONGO_URI = os.environ.get(
+    "MONGO_URI",
+    "mongodb+srv://harshavvc234:wP5Ifcv0FwJuj3vG@cluster444.x7wmqzg.mongodb.net/"
+)
 client = MongoClient(MONGO_URI)
-db = client["mydb"]
-collection = db["mycollection"]
 
-@app.route('/submit', methods=['POST'])
-def submit_form():
-    try:
-        data = request.get_json()
-        if not all(k in data for k in ("name", "email", "age", "country")):
-            return jsonify({"error": "Missing fields"}), 400
+db = client["todo_database"]
+collection = db["todo_items"]
 
-        data['age'] = int(data['age'])
-        collection.insert_one(data)
-        return jsonify({"message": "Success"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@app.route('/submittodoitem', methods=['POST'])
+def submit_todo_item():
+    item_name = request.form.get('itemName')
+    item_description = request.form.get('itemDescription')
+
+    if not item_name or not item_description:
+        return jsonify({"error": "Missing fields"}), 400
+
+    todo = {
+        "name": item_name,
+        "description": item_description
+    }
+
+    collection.insert_one(todo)
+    return jsonify({"message": "To-Do item submitted successfully"}), 200
 
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)
-
+    app.run(debug=True)
